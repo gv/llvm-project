@@ -215,6 +215,15 @@ Status ProcessMinidump::DoLoadCore() {
                                    arch.GetArchitectureName());
     return error;
   }
+
+  if (arch.GetMachine() != GetTarget().GetArchitecture().GetMachine()) {
+    error.SetErrorStringWithFormat("minidump architecture (%s) has a "
+      "different machine instruction set from target architecture (%s)",
+      arch.GetArchitectureName(),
+      GetTarget().GetArchitecture().GetArchitectureName());
+    return error;
+  }
+  
   GetTarget().SetArchitecture(arch, true /*set_platform*/);
 
   m_thread_list = m_minidump_parser->GetThreads();
