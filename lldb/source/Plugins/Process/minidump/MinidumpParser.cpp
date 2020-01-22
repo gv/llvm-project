@@ -331,33 +331,8 @@ MinidumpParser::FindMemoryRange(lldb::addr_t addr) {
   llvm::ArrayRef<uint8_t> data64 = GetStream(StreamType::Memory64List);
   Log *log = GetLogIfAnyCategoriesSet(LIBLLDB_LOG_MODULES);
 
-  auto ExpectedMemory = GetMinidumpFile().getMemoryList();
-  if (!ExpectedMemory) {
-    LLDB_LOG_ERROR(log, ExpectedMemory.takeError(),
-                   "Failed to read memory list: {0}");
-  } else {
-    for (const auto &memory_desc : *ExpectedMemory) {
-      const LocationDescriptor &loc_desc = memory_desc.Memory;
-      const lldb::addr_t range_start = memory_desc.StartOfMemoryRange;
-      const size_t range_size = loc_desc.DataSize;
-
-      if (loc_desc.RVA + loc_desc.DataSize > GetData().size())
-        return llvm::None;
-
-      if (range_start <= addr && addr < range_start + range_size) {
-        auto ExpectedSlice = GetMinidumpFile().getRawData(loc_desc);
-        if (!ExpectedSlice) {
-          LLDB_LOG_ERROR(log, ExpectedSlice.takeError(),
-                         "Failed to get memory slice: {0}");
-          return llvm::None;
-        }
-        return minidump::Range(range_start, *ExpectedSlice);
-      }
-    }
-  }
-
   // Some Minidumps have a Memory64ListStream that captures all the heap memory
-  // (full-memory Minidumps).  We can't exactly use the same loop as above,
+  // (full-memory Minidumps).  We can't exactly use the same loop as below,
   // because the Minidump uses slightly different data structures to describe
   // those
 
@@ -382,6 +357,31 @@ MinidumpParser::FindMemoryRange(lldb::addr_t addr) {
                                GetData().slice(base_rva, range_size));
       }
       base_rva += range_size;
+    }
+  }
+
+  auto ExpectedMemory = GetMinidumpFile().getMemoryList();
+  if (!ExpectedMemory) {
+    LLDB_LOG_ERROR(log, ExpectedMemory.takeError(),
+                   "Failed to read memory list: {0}");
+  } else {
+    for (const auto &memory_desc : *ExpectedMemory) {
+      const LocationDescriptor &loc_desc = memory_desc.Memory;
+      const lldb::addr_t range_start = memory_desc.StartOfMemoryRange;
+      const size_t range_size = loc_desc.DataSize;
+
+      if (loc_desc.RVA + loc_desc.DataSize > GetData().size())
+        return llvm::None;
+
+      if (range_start <= addr && addr < range_start + range_size) {
+        auto ExpectedSlice = GetMinidumpFile().getRawData(loc_desc);
+        if (!ExpectedSlice) {
+          LLDB_LOG_ERROR(log, ExpectedSlice.takeError(),
+                         "Failed to get memory slice: {0}");
+          return llvm::None;
+        }
+        return minidump::Range(range_start, *ExpectedSlice);
+      }
     }
   }
 
