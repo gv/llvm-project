@@ -60,7 +60,7 @@ lldb::DataBufferSP lldb_private::minidump::ConvertMinidumpContext_x86_64(
   const MinidumpContext_x86_64 *context;
   consumeObject(source_data, context);
 
-  const MinidumpContext_x86_64_Flags context_flags =
+  MinidumpContext_x86_64_Flags context_flags =
       static_cast<MinidumpContext_x86_64_Flags>(
           static_cast<uint32_t>(context->context_flags));
   auto x86_64_Flag = MinidumpContext_x86_64_Flags::x86_64_Flag;
@@ -68,7 +68,11 @@ lldb::DataBufferSP lldb_private::minidump::ConvertMinidumpContext_x86_64(
   auto IntegerFlag = MinidumpContext_x86_64_Flags::Integer;
   auto SegmentsFlag = MinidumpContext_x86_64_Flags::Segments;
 
-  if ((context_flags & x86_64_Flag) != x86_64_Flag)
+  // Breakpad on Mac generates minidumps with no flags set
+  if (context_flags == x86_64_Flag &&
+    source_data.size() == 0x4d0 - sizeof(MinidumpContext_x86_64)) {
+    context_flags = x86_64_Flag | ControlFlag | IntegerFlag | SegmentsFlag;
+  } else if ((context_flags & x86_64_Flag) != x86_64_Flag)
     return nullptr;
 
   if ((context_flags & ControlFlag) == ControlFlag) {
