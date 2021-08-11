@@ -21,6 +21,7 @@
 #include "llvm/Support/Error.h"
 
 #include "lldb/Utility/LLDBAssert.h"
+#include "lldb/Utility/Log.h"
 #include "lldb/lldb-defines.h"
 
 using namespace lldb_private;
@@ -128,6 +129,11 @@ void PdbIndex::BuildAddrToSymbolMap(CompilandIndexItem &cci) {
       continue;
 
     SegmentOffset so = GetSegmentAndOffset(*iter);
+    if (so.segment == 0) {
+      LLDB_LOG(lldb_private::GetLogIfAnyCategoriesSet(LIBLLDB_LOG_SYMBOLS),
+        "Segment=0 in debug stream! offset={0} kind={1}", so.offset, iter->kind());
+      continue;
+    }
     lldb::addr_t va = MakeVirtualAddress(so);
 
     PdbCompilandSymId cu_sym_id(modi, iter.offset());
