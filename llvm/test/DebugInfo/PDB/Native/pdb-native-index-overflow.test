@@ -1,0 +1,10 @@
+; Test that the native PDB reader isn't crashed by index value bigger than
+; number of types in TPI stream
+; RUN: llvm-pdbutil dump %p/../Inputs/empty.pdb --type-index=20000000\
+; RUN:   | FileCheck -check-prefix=NOT_FOUND %s
+
+NOT_FOUND:                     Types (TPI Stream)                     
+NOT_FOUND:============================================================
+NOT_FOUND:  Showing 1 records.
+NOT_FOUND:  Type 0x1312D00 doesn't exist in TPI stream
+

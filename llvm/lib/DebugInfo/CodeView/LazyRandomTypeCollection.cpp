@@ -194,6 +194,8 @@ Error LazyRandomTypeCollection::visitRangeForType(TypeIndex TI) {
   }
 
   visitRange(TIB, Prev->Offset, TIE);
+  if (Records.size() <= TI.toArrayIndex())
+		return make_error<CodeViewError>("Type index too big");
   return Error::success();
 }
 
